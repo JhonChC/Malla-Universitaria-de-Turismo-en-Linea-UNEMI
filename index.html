@@ -1034,6 +1034,254 @@
             loadProgress();
             reEvaluateAllCourses(); // Evaluar el estado inicial de bloqueo/desbloqueo
         };
+                // Inicializar el estado de aprobación desde localStorage
+        let approvedState = JSON.parse(localStorage.getItem('curriculumProgress')) || {};
+        curriculumData.forEach(item => {
+            if (approvedState[item.id] === undefined) {
+                approvedState[item.id] = false;
+            }
+        });
+
+        const curriculumContainer = document.getElementById('curriculum-container');
+        const approvedSubjectsCountElem = document.getElementById('approved-subjects-count'); // Renamed ID
+        const approvedModulesCountElem = document.getElementById('approved-modules-count');   // New ID
+        const totalCreditsElem = document.getElementById('total-credits');
+        const mallaCreditsElem = document.getElementById('malla-credits');
+        const moduleCreditsElem = document.getElementById('module-credits');
+        const clearProgressBtn = document.getElementById('clear-progress-btn');
+        const completionModal = document.getElementById('completion-modal');
+        const closeModalBtn = document.getElementById('close-modal-btn');
+        const totalSubjectsElem = document.getElementById('total-subjects');
+        const totalModulesElem = document.getElementById('total-modules');
+
+        // Contadores iniciales
+        totalSubjectsElem.textContent = curriculumData.filter(item => item.type === 'subject').length;
+        totalModulesElem.textContent = curriculumData.filter(item => item.type === 'module').length;
+
+        // Función para verificar si una materia/módulo está desbloqueado
+        function isUnlocked(itemId) {
+            const item = curriculumData.find(d => d.id === itemId);
+            if (!item) return false; // Should not happen
+
+            // If no prerequisites, it's always unlocked
+            if (item.prerequisites.length === 0) {
+                return true;
+            }
+
+            // Check if all prerequisites are approved
+            return item.prerequisites.every(prereqId => approvedState[prereqId]);
+        }
+
+        // Función para obtener los prerrequisitos faltantes
+        function getMissingPrerequisites(itemId) {
+            const item = curriculumData.find(d => d.id === itemId);
+            if (!item || item.prerequisites.length === 0) return [];
+
+            return item.prerequisites.filter(prereqId => !approvedState[prereqId])
+                                     .map(prereqId => curriculumData.find(d => d.id === prereqId)?.name || 'Desconocido');
+        }
+
+        // Función para renderizar la malla curricular
+        function renderCurriculum() {
+            curriculumContainer.innerHTML = ''; // Limpiar el contenedor
+
+            // Agrupar por unidad
+            const units = {};
+            curriculumData.forEach(item => {
+                if (!units[item.unit]) {
+                    units[item.unit] = {
+                        name: item.unit === 'preuniversitaria' ? 'Unidad Preuniversitaria (PRE)' :
+                              item.unit === 'basica' ? 'Unidad Básica' :
+                              item.unit === 'profesional' ? 'Unidad Profesional' :
+                              item.unit === 'titulacion' ? 'Unidad de Titulación' :
+                              item.unit === 'modulos' ? 'Módulos Complementarios' : item.unit,
+                        class: item.unit,
+                        semesters: {}
+                    };
+                }
+                if (item.type === 'subject') {
+                    if (!units[item.unit].semesters[item.semester]) {
+                        units[item.unit].semesters[item.semester] = {
+                            name: item.semester,
+                            class: item.semester.toLowerCase().replace(/\s/g, '-').replace('er', '').replace('do', '').replace('no', ''), // For CSS class
+                            items: []
+                        };
+                    }
+                    units[item.unit].semesters[item.semester].items.push(item);
+                } else if (item.type === 'module') {
+                    if (!units[item.unit].semesters[item.moduleType]) {
+                        units[item.unit].semesters[item.moduleType] = {
+                            name: item.moduleType.charAt(0).toUpperCase() + item.moduleType.slice(1), // Capitalize module type
+                            class: item.moduleType,
+                            items: []
+                        };
+                    }
+                    units[item.unit].semesters[item.moduleType].items.push(item);
+                }
+            });
+
+            // Ordenar unidades
+            const unitOrder = ['preuniversitaria', 'basica', 'profesional', 'titulacion', 'modulos'];
+            unitOrder.forEach(unitKey => {
+                if (units[unitKey]) {
+                    const unit = units[unitKey];
+                    const unitDiv = document.createElement('div');
+                    unitDiv.classList.add('unit', unit.class);
+
+                    const unitTitle = document.createElement('h2');
+                    unitTitle.textContent = unit.name;
+                    unitDiv.appendChild(unitTitle);
+
+                    const semestersGrid = document.createElement('div');
+                    semestersGrid.classList.add('semesters-grid');
+
+                    // Ordenar semestres/tipos de módulos dentro de la unidad
+                    let semesterKeys = Object.keys(unit.semesters);
+                    if (unitKey === 'basica') semesterKeys.sort((a, b) => parseInt(a) - parseInt(b));
+                    if (unitKey === 'profesional') semesterKeys.sort((a, b) => parseInt(a) - parseInt(b));
+                    if (unitKey === 'titulacion') semesterKeys.sort((a, b) => parseInt(a) - parseInt(b));
+                    if (unitKey === 'modulos') semesterKeys = ['ingles', 'computacion']; // Specific order for modules
+
+                    semesterKeys.forEach(semKey => {
+                        const semester = unit.semesters[semKey];
+                        const semesterCard = document.createElement('div');
+                        semesterCard.classList.add(semester.type === 'module' ? 'module-type-card' : 'semester-card', semester.class);
+
+                        const semesterTitle = document.createElement('h3');
+                        semesterTitle.textContent = semester.name;
+                        semesterCard.appendChild(semesterTitle);
+
+                        semester.items.forEach(item => {
+                            const card = document.createElement('div');
+                            card.classList.add(item.type === 'subject' ? 'subject-card' : 'module-card');
+                            card.setAttribute('data-id', item.id);
+
+                            // Check if item is approved
+                            if (approvedState[item.id]) {
+                                card.classList.add('approved');
+                            }
+
+                            // Check if item is blocked
+                            const isBlocked = !isUnlocked(item.id);
+                            if (isBlocked) {
+                                card.classList.add('blocked');
+                                const tooltip = document.createElement('span');
+                                tooltip.classList.add('tooltip');
+                                const missingPrereqs = getMissingPrerequisites(item.id);
+                                tooltip.textContent = 'Requiere: ' + missingPrereqs.join(', ');
+                                card.appendChild(tooltip);
+                            }
+
+                            card.innerHTML += `
+                                <span class="icon">${item.icon}</span>
+                                <div class="details">
+                                    <strong>${item.name}</strong>
+                                    <span>Créditos: ${item.credits.toFixed(2)}</span>
+                                </div>
+                            `;
+                            semesterCard.appendChild(card);
+                        });
+                        semestersGrid.appendChild(semesterCard);
+                    });
+                    unitDiv.appendChild(semestersGrid);
+                    curriculumContainer.appendChild(unitDiv);
+                }
+            });
+
+            addEventListeners();
+            updateStatistics();
+            checkCompletion();
+        }
+
+        // Función para añadir event listeners a las tarjetas de materia/módulo
+        function addEventListeners() {
+            document.querySelectorAll('.subject-card, .module-card').forEach(card => {
+                card.onclick = (event) => {
+                    const itemId = card.getAttribute('data-id');
+                    const isCurrentlyApproved = approvedState[itemId];
+
+                    // Si está bloqueada y no está aprobada, no permitir clic
+                    if (card.classList.contains('blocked') && !isCurrentlyApproved) {
+                        return;
+                    }
+
+                    // Toggle approval status
+                    approvedState[itemId] = !isCurrentlyApproved;
+
+                    // If a subject is unapproved, unapprove all its dependents
+                    if (!approvedState[itemId]) {
+                        curriculumData.forEach(depItem => {
+                            if (depItem.prerequisites.includes(itemId) && approvedState[depItem.id]) {
+                                approvedState[depItem.id] = false;
+                            }
+                        });
+                    }
+
+                    saveProgress();
+                    renderCurriculum(); // Re-render to update all states
+                };
+            });
+        }
+
+        // Función para guardar el progreso en localStorage
+        function saveProgress() {
+            localStorage.setItem('curriculumProgress', JSON.stringify(approvedState));
+        }
+
+        // Función para actualizar las estadísticas
+        function updateStatistics() {
+            let approvedSubjectsCount = 0;
+            let approvedModulesCount = 0; // New counter for modules
+            let totalMallaCredits = 0;
+            let totalModuleCredits = 0;
+
+            curriculumData.forEach(item => {
+                if (approvedState[item.id]) {
+                    if (item.type === 'subject') {
+                        approvedSubjectsCount++;
+                        totalMallaCredits += item.credits;
+                    } else if (item.type === 'module') {
+                        approvedModulesCount++; // Increment module counter
+                        totalModuleCredits += item.credits;
+                    }
+                }
+            });
+
+            approvedSubjectsCountElem.textContent = approvedSubjectsCount;
+            approvedModulesCountElem.textContent = approvedModulesCount; // Update new module counter
+            mallaCreditsElem.textContent = totalMallaCredits.toFixed(2);
+            moduleCreditsElem.textContent = totalModuleCredits.toFixed(2);
+            totalCreditsElem.textContent = (totalMallaCredits + totalModuleCredits).toFixed(2);
+        }
+
+        // Función para verificar si la carrera está completa
+        function checkCompletion() {
+            const allApproved = curriculumData.every(item => approvedState[item.id]);
+            if (allApproved) {
+                completionModal.style.display = 'flex';
+            } else {
+                completionModal.style.display = 'none';
+            }
+        }
+
+        // Event listener para el botón de borrar progreso
+        clearProgressBtn.addEventListener('click', () => {
+            if (confirm('¿Estás seguro de que quieres borrar todo tu progreso? Esta acción no se puede deshacer.')) {
+                approvedState = {}; // Reset all to false
+                curriculumData.forEach(item => approvedState[item.id] = false);
+                saveProgress();
+                renderCurriculum();
+            }
+        });
+
+        // Event listener para cerrar el modal de felicitación
+        closeModalBtn.addEventListener('click', () => {
+            completionModal.style.display = 'none';
+        });
+
+        // Renderizar la malla al cargar la página
+        document.addEventListener('DOMContentLoaded', renderCurriculum);
+
     </script>
 </body>
 </html>
