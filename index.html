@@ -451,6 +451,10 @@
             <p id="approved-subjects">0</p>
         </div>
         <div class="stat-card">
+            <h3>Módulos Aprobados</h3>
+            <p id="approved-modules">0</p>
+        </div>
+        <div class="stat-card">
             <h3>Créditos Totales</h3>
             <p id="total-credits">0.00</p>
         </div>
@@ -1001,21 +1005,24 @@
         // Actualizar las estadísticas
         function updateStatistics() {
             let approvedSubjectsCount = 0;
+            let approvedModulesCount = 0; // Nuevo contador para módulos
             let mallaCredits = 0;
             let moduleCredits = 0;
 
             for (const id in approvedState) {
                 if (approvedState[id]) {
-                    approvedSubjectsCount++;
                     if (allCourses[id].type === 'malla') {
+                        approvedSubjectsCount++;
                         mallaCredits += allCourses[id].credits;
                     } else if (allCourses[id].type === 'modulo') {
+                        approvedModulesCount++; // Incrementar contador de módulos
                         moduleCredits += allCourses[id].credits;
                     }
                 }
             }
 
             document.getElementById('approved-subjects').textContent = approvedSubjectsCount;
+            document.getElementById('approved-modules').textContent = approvedModulesCount; // Actualizar el nuevo elemento
             document.getElementById('malla-credits').textContent = mallaCredits.toFixed(2);
             document.getElementById('module-credits').textContent = moduleCredits.toFixed(2);
             document.getElementById('total-credits').textContent = (mallaCredits + moduleCredits).toFixed(2);
