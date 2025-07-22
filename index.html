@@ -191,7 +191,9 @@
             border-radius: 12px;
             padding: 20px;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
-            flex: 1 1 calc(33.333% - 20px); /* 3 columnas en desktop */
+            /* Ajustado para que intente 4 columnas en desktop, con un min-width */
+            flex: 1 1 min(280px, calc(25% - 20px));
+            max-width: calc(25% - 20px); /* Asegura que no crezca demasiado */
             box-sizing: border-box;
             min-width: 280px; /* Ancho mínimo para cada semestre */
             display: flex;
@@ -414,8 +416,9 @@
             padding: 25px;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
             text-align: center;
-            flex: 1 1 calc(50% - 30px); /* Dos columnas para módulos en desktop, con espacio */
-            max-width: calc(50% - 30px); /* Asegura que no crezcan más allá de la mitad */
+            /* Ajustado para que intente 2 columnas en desktop, con un min-width */
+            flex: 1 1 min(300px, calc(50% - 30px));
+            max-width: calc(50% - 30px); /* Asegura que no crezca demasiado */
             box-sizing: border-box;
             background-color: var(--module-bg-neutral);
             transition: all 0.3s ease;
@@ -573,6 +576,7 @@
         @media (max-width: 1200px) {
             .semester {
                 flex: 1 1 calc(50% - 20px); /* 2 columnas en tablet */
+                max-width: calc(50% - 20px);
             }
             .module-type {
                 flex: 1 1 calc(50% - 20px); /* 2 columnas para módulos en tablet */
@@ -599,6 +603,7 @@
             }
             .semester {
                 flex: 1 1 100%; /* 1 columna en mobile */
+                max-width: 100%;
             }
             .modules-container {
                 flex-direction: column; /* Módulos se apilan en mobile */
@@ -607,7 +612,6 @@
                 flex: 1 1 100%; /* 1 columna para módulos en mobile */
                 max-width: 100%;
             }
-            /* No necesitamos .module-category en la nueva estructura */
         }
     </style>
 </head>
