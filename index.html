@@ -148,12 +148,11 @@
             color: #0056b3;
         }
 
-        /* Unidades */
-        .units-container, .modules-container {
+        /* Contenedor de Unidades (vertical) */
+        .units-container {
             display: flex;
-            flex-direction: column; /* Cambiado a columna para apilar */
-            justify-content: center;
-            gap: 30px; /* Espacio entre unidades/módulos */
+            flex-direction: column; /* Las unidades se apilan verticalmente */
+            gap: 30px; /* Espacio entre unidades */
             margin-top: 40px;
         }
 
@@ -162,9 +161,7 @@
             padding: 25px;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
             text-align: center;
-            flex: 1;
-            min-width: 300px;
-            max-width: 100%; /* Permite que la unidad ocupe todo el ancho en pantallas pequeñas */
+            width: 100%; /* Ocupa todo el ancho disponible */
             box-sizing: border-box;
             transition: all 0.3s ease;
         }
@@ -181,7 +178,7 @@
             color: #0056b3; /* Color oscuro para el título de la unidad */
         }
 
-        /* Semestres */
+        /* Grid de Semestres (horizontal dentro de cada unidad) */
         .semesters-grid {
             display: flex;
             flex-wrap: wrap;
@@ -194,7 +191,7 @@
             border-radius: 12px;
             padding: 20px;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
-            flex: 1 1 calc(33.333% - 20px); /* 3 columnas en desktop, ajusta para mobile */
+            flex: 1 1 calc(33.333% - 20px); /* 3 columnas en desktop */
             box-sizing: border-box;
             min-width: 280px; /* Ancho mínimo para cada semestre */
             display: flex;
@@ -402,15 +399,23 @@
         .sem-9 .subject-card:nth-child(6) { background-color: var(--sem-9-card-6); }
 
 
-        /* Módulos */
+        /* Contenedor de Módulos (horizontal) */
+        .modules-container {
+            display: flex;
+            flex-direction: row; /* Los módulos se alinean horizontalmente */
+            flex-wrap: wrap; /* Permite que los módulos salten de línea si no hay espacio */
+            justify-content: center;
+            gap: 30px; /* Espacio entre tipos de módulos */
+            margin-top: 40px;
+        }
+
         .module-type {
             border-radius: 15px;
             padding: 25px;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
             text-align: center;
-            flex: 1;
-            min-width: 300px;
-            max-width: 100%;
+            flex: 1 1 calc(50% - 30px); /* Dos columnas para módulos en desktop, con espacio */
+            max-width: calc(50% - 30px); /* Asegura que no crezcan más allá de la mitad */
             box-sizing: border-box;
             background-color: var(--module-bg-neutral);
             transition: all 0.3s ease;
@@ -435,7 +440,7 @@
             border-radius: 12px;
             padding: 20px;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
-            flex: 1 1 calc(50% - 20px); /* 2 columnas para módulos */
+            flex: 1 1 100%; /* Ocupa todo el ancho dentro de su tipo de módulo */
             box-sizing: border-box;
             min-width: 280px;
             display: flex;
@@ -595,6 +600,10 @@
             .semester {
                 flex: 1 1 calc(50% - 20px); /* 2 columnas en tablet */
             }
+            .module-type {
+                flex: 1 1 calc(50% - 20px); /* 2 columnas para módulos en tablet */
+                max-width: calc(50% - 20px);
+            }
         }
 
         @media (max-width: 768px) {
@@ -617,8 +626,15 @@
             .semester {
                 flex: 1 1 100%; /* 1 columna en mobile */
             }
-            .module-category {
+            .modules-container {
+                flex-direction: column; /* Módulos se apilan en mobile */
+            }
+            .module-type {
                 flex: 1 1 100%; /* 1 columna para módulos en mobile */
+                max-width: 100%;
+            }
+            .module-category {
+                flex: 1 1 100%; /* 1 columna para categorías de módulos en mobile */
             }
         }
     </style>
